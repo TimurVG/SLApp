@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
@@ -17,6 +18,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.SLApp">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,5 +30,6 @@
             android:name=".ScreenLockService"
             android:enabled="true"
             android:exported="false" />
+
     </application>
 </manifest>
