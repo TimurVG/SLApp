@@ -13,16 +13,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SLApp"
         tools:targetApi="31">
+
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.SLApp">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <service android:name=".ScreenLockService" />
+        <service
+            android:name=".ScreenLockService"
+            android:enabled="true"
+            android:exported="false" />
     </application>
-
 </manifest>
