@@ -5,13 +5,13 @@
     android:layout_height="match_parent"
     android:gravity="center"
     android:orientation="vertical"
+    android:padding="16dp"
     tools:context=".MainActivity">
 
     <Switch
-        android:id="@+id/switchLock"
+        android:id="@+id/lockSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Блокировка экрана"
-        android:textSize="18sp" />
-
+        android:textSize="18sp"/>
 </LinearLayout>

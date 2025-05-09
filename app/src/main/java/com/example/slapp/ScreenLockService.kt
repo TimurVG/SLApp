@@ -1,62 +1,76 @@
-package com.example.slapp
+package com.timurvg.slapp
 
-import android.app.Service
+import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
-import android.content.Intent
-import android.graphics.PixelFormat
-import android.os.Build
-import android.os.IBinder
-import android.view.Gravity
-import android.view.LayoutInflater
-import android.view.View
-import android.view.WindowManager
-import android.widget.Toast
+import android.os.*
+import android.util.Log
+import android.view.accessibility.AccessibilityEvent
 
-class ScreenLockService : Service() {
-    private lateinit var windowManager: WindowManager
-    private lateinit var overlayView: View
+class ScreenLockService : AccessibilityService() {
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    private lateinit var vibrator: Vibrator
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreate() {
         super.onCreate()
+        val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+        vibrator = vibratorManager.defaultVibrator
+    }
 
-        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-
-        val layoutParams = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            } else {
-                WindowManager.LayoutParams.TYPE_PHONE
-            },
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
+    override fun onServiceConnected() {
+        val info = AccessibilityServiceInfo().apply {
+            eventTypes = AccessibilityEvent.TYPE_GESTURE_DETECTION_START
+            feedbackType = AccessibilityServiceInfo.FEEDBACK_HAPTIC
+            flags = AccessibilityServiceInfo.FLAG_REQUEST_TOUCH_EXPLORATION_MODE or
+                    AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
+            notificationTimeout = 100
         }
+        this.serviceInfo = info
+    }
 
-        overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_layout, null)
-
-        try {
-            windowManager.addView(overlayView, layoutParams)
-        } catch (e: Exception) {
-            Toast.makeText(this, "Error creating overlay: ${e.message}", Toast.LENGTH_LONG).show()
-            stopSelf()
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        event?.let {
+            if (it.eventType == AccessibilityEvent.TYPE_GESTURE_DETECTION_START) {
+                if (it.pointerCount >= 3) {
+                    lockScreen()
+                }
+            }
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        if (::overlayView.isInitialized && ::windowManager.isInitialized) {
-            try {
-                windowManager.removeView(overlayView)
-            } catch (e: Exception) {
-                // View not attached
-            }
+    private fun lockScreen() {
+        try {
+            vibrate()
+            handler.postDelayed({
+                performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+            }, 300) // Небольшая задержка для плавности
+        } catch (e: Exception) {
+            Log.e("SLApp", "Lock error", e)
         }
+    }
+
+    private fun vibrate() {
+        try {
+            if (vibrator.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(
+                        VibrationEffect.createOneShot(
+                            100,
+                            VibrationEffect.DEFAULT_AMPLITUDE
+                        )
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(100)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SLApp", "Vibration error", e)
+        }
+    }
+
+    override fun onInterrupt() {
+        Log.e("SLApp", "Service interrupted")
     }
 }
