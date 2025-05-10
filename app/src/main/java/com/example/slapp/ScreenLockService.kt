@@ -14,8 +14,13 @@ class ScreenLockService : AccessibilityService() {
 
     override fun onCreate() {
         super.onCreate()
-        val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-        vibrator = vibratorManager.defaultVibrator
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
     }
 
     override fun onServiceConnected() {
@@ -32,9 +37,7 @@ class ScreenLockService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         event?.let {
             if (it.eventType == AccessibilityEvent.TYPE_GESTURE_DETECTION_START) {
-                if (it.pointerCount >= 3) {
-                    lockScreen()
-                }
+                lockScreen()
             }
         }
     }
@@ -44,7 +47,7 @@ class ScreenLockService : AccessibilityService() {
             vibrate()
             handler.postDelayed({
                 performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
-            }, 300) // Небольшая задержка для плавности
+            }, 300)
         } catch (e: Exception) {
             Log.e("SLApp", "Lock error", e)
         }

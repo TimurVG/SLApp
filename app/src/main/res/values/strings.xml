@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">SLApp</string>
-    <string name="accessibility_service_label">Служба блокировки экрана</string>
-    <string name="accessibility_service_description">Служба для блокировки экрана жестами</string>
+    <string name="accessibility_service_label">Screen Lock Service</string>
+    <string name="accessibility_service_description">Service for locking screen with gestures</string>
 </resources>

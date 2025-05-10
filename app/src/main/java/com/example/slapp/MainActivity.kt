@@ -1,10 +1,12 @@
 package com.timurvg.slapp
 
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Switch
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
@@ -20,6 +22,7 @@ class MainActivity : AppCompatActivity() {
                 if (isAccessibilityServiceEnabled()) {
                     startService(Intent(this, ScreenLockService::class.java))
                     Toast.makeText(this, "Служба блокировки активирована", Toast.LENGTH_SHORT).show()
+                    moveTaskToBack(true) // Сворачиваем приложение
                 } else {
                     lockSwitch.isChecked = false
                     requestAccessibilityPermission()
@@ -31,25 +34,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {
-        val serviceName = ComponentName(this, ScreenLockService::class.java)
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
+        try {
+            val serviceName = ComponentName(this, ScreenLockService::class.java)
+            val enabledServices = Settings.Secure.getString(
+                contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            ) ?: return false
 
-        return enabledServices.split(':').any { it.contains(serviceName.flattenToString()) }
+            return enabledServices.contains(serviceName.flattenToString())
+        } catch (e: Exception) {
+            return false
+        }
     }
 
     private fun requestAccessibilityPermission() {
         try {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            Toast.makeText(
-                this,
-                "Включите SLApp в настройках специальных возможностей",
-                Toast.LENGTH_LONG
-            ).show()
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+
+            AlertDialog.Builder(this)
+                .setTitle("Включение службы")
+                .setMessage("1. Найдите '${getString(R.string.accessibility_service_label)}' в списке\n2. Включите переключатель\n3. Нажмите 'OK'")
+                .setPositiveButton("OK") { _, _ -> }
+                .show()
         } catch (e: Exception) {
-            Toast.makeText(this, "Ошибка открытия настроек", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Ошибка открытия настроек: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
         }
     }
 }
