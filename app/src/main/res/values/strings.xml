@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SLApp</string>
+    <string name="app_name">Screen Lock App</string>
     <string name="accessibility_service_label">Screen Lock Service</string>
     <string name="accessibility_service_description">Service for locking screen with gestures</string>
 </resources>
