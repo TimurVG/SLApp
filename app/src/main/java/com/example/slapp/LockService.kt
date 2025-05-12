@@ -1,40 +1,54 @@
-package com.example.slapp
+package com.example.slapp.service
 
 import android.app.Service
 import android.content.Intent
-import android.graphics.PixelFormat
 import android.os.IBinder
-import android.view.Gravity
-import android.view.WindowManager
-import android.view.WindowManager.LayoutParams
+import android.os.Vibrator
+import android.view.GestureDetector
+import android.view.MotionEvent
 
 class LockService : Service() {
-    private lateinit var windowManager: WindowManager
-    private lateinit var params: LayoutParams
+    private lateinit var gestureDetector: GestureDetector
+    private var isLocked = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onCreate() {
-        super.onCreate()
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-
-        params = LayoutParams(
-            LayoutParams.MATCH_PARENT,
-            LayoutParams.MATCH_PARENT,
-            LayoutParams.TYPE_APPLICATION_OVERLAY,
-            LayoutParams.FLAG_NOT_FOCUSABLE or
-                    LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-        }
-
-        windowManager.addView(LockOverlayView(this), params)
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        initGestureDetector()
+        return START_STICKY
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        windowManager.removeView(LockOverlayView(this))
+    private fun initGestureDetector() {
+        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean = true
+
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent?,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 != null && e2 != null && e1.pointerCount == 3 && e2.y - e1.y > 100) {
+                    toggleLock()
+                    return true
+                }
+                return false
+            }
+        })
+    }
+
+    private fun toggleLock() {
+        isLocked = !isLocked
+        try {
+            val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator.vibrate(android.os.VibrationEffect.createOneShot(100, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(100)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

@@ -3,20 +3,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center"
-    android:padding="16dp">
+    android:gravity="center">
 
     <Switch
         android:id="@+id/lockSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Блокировка экрана"
-        android:textSize="18sp"/>
+        android:text="Lock Screen Service" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Включите переключатель для активации"
-        android:textSize="14sp"
-        android:layout_marginTop="16dp"/>
 </LinearLayout>
