@@ -1,78 +1,32 @@
-package com.timurvg.slapp
+package com.example.slapp
 
-import android.accessibilityservice.AccessibilityService
-import android.accessibilityservice.AccessibilityServiceInfo
-import android.content.Context
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Intent
+import android.graphics.Color
 import android.graphics.PixelFormat
-import android.os.*
-import android.util.Log
-import android.view.*
-import android.view.accessibility.AccessibilityEvent
-import android.widget.FrameLayout
+import android.os.Build
+import android.os.IBinder
+import android.view.View
+import android.view.WindowManager
+import androidx.core.app.NotificationCompat
 
-class ScreenLockService : AccessibilityService() {
-
-    private lateinit var vibrator: Vibrator
-    private var isLocked = false
-    private var overlayView: View? = null
-    private var windowManager: WindowManager? = null
+class ScreenLockService : Service() {
+    private lateinit var windowManager: WindowManager
+    private lateinit var overlayView: View
 
     override fun onCreate() {
         super.onCreate()
-        vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    }
+        createNotificationChannel()
+        startForeground(1, createNotification())
 
-    override fun onServiceConnected() {
-        val info = AccessibilityServiceInfo().apply {
-            eventTypes = AccessibilityEvent.TYPE_TOUCH_INTERACTION_START or
-                    AccessibilityEvent.TYPE_TOUCH_INTERACTION_END
-            feedbackType = AccessibilityServiceInfo.FEEDBACK_HAPTIC
-            flags = AccessibilityServiceInfo.FLAG_REQUEST_TOUCH_EXPLORATION_MODE or
-                    AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
-            notificationTimeout = 100
+        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        overlayView = View(this).apply {
+            setBackgroundColor(Color.TRANSPARENT)
         }
-        this.serviceInfo = info
-    }
 
-    private var touchCount = 0
-    private var lastTouchTime = 0L
-
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        when (event?.eventType) {
-            AccessibilityEvent.TYPE_TOUCH_INTERACTION_START -> {
-                touchCount++
-                if (touchCount >= 3 && System.currentTimeMillis() - lastTouchTime < 500) {
-                    if (isLocked) {
-                        unlockScreen()
-                    } else {
-                        lockScreen()
-                    }
-                    touchCount = 0
-                }
-                lastTouchTime = System.currentTimeMillis()
-            }
-            AccessibilityEvent.TYPE_TOUCH_INTERACTION_END -> {
-                touchCount = 0
-            }
-        }
-    }
-
-    private fun lockScreen() {
-        if (isLocked) return
-        isLocked = true
-        vibrate()
-        createTouchBlockerOverlay()
-    }
-
-    private fun unlockScreen() {
-        if (!isLocked) return
-        isLocked = false
-        vibrate()
-        removeOverlay()
-    }
-
-    private fun createTouchBlockerOverlay() {
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -80,43 +34,45 @@ class ScreenLockService : AccessibilityService() {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             else
                 WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
-            PixelFormat.TRANSPARENT
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
         )
 
-        overlayView = FrameLayout(this).apply {
-            setOnTouchListener { _, _ -> true }
-        }
-
-        windowManager?.addView(overlayView, params)
-    }
-
-    private fun removeOverlay() {
-        overlayView?.let {
-            windowManager?.removeView(it)
-            overlayView = null
-        }
-    }
-
-    private fun vibrate() {
         try {
-            if (vibrator.hasVibrator()) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-                } else {
-                    @Suppress("DEPRECATION")
-                    vibrator.vibrate(100)
-                }
-            }
+            windowManager.addView(overlayView, params)
         } catch (e: Exception) {
-            Log.e("SLApp", "Vibration error", e)
+            e.printStackTrace()
         }
     }
 
-    override fun onInterrupt() {
-        Log.e("SLApp", "Service interrupted")
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "lock_channel",
+                "Screen Lock",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            getSystemService(NotificationManager::class.java)
+                .createNotificationChannel(channel)
+        }
     }
+
+    private fun createNotification(): Notification {
+        return NotificationCompat.Builder(this, "lock_channel")
+            .setContentTitle("Screen Lock Active")
+            .setSmallIcon(R.drawable.ic_lock)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            windowManager.removeView(overlayView)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
 }
