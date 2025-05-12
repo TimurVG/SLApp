@@ -1,15 +1,18 @@
 package com.example.slapp
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.slapp.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var binding: ActivityMainBinding
+    private val vibrator by lazy { getSystemService(Vibrator::class.java) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,14 +25,45 @@ class MainActivity : AppCompatActivity() {
                     requestAccessibilityPermission()
                     binding.switchLock.isChecked = false
                 } else {
-                    startService(Intent(this, LockService::class.java))
-                    Toast.makeText(this, "Блокировка активирована", Toast.LENGTH_SHORT).show()
+                    startLockService()
+                    showToast("Блокировка активирована")
+                    vibrate(50)
+                    moveTaskToBack(true)
                 }
             } else {
-                stopService(Intent(this, LockService::class.java))
-                Toast.makeText(this, "Блокировка деактивирована", Toast.LENGTH_SHORT).show()
+                stopLockService()
+                showToast("Блокировка деактивирована")
+                vibrate(100)
             }
         }
+    }
+
+    private fun startLockService() {
+        val serviceIntent = Intent(this, LockService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+    }
+
+    private fun stopLockService() {
+        stopService(Intent(this, LockService::class.java))
+    }
+
+    private fun vibrate(duration: Long) {
+        if (vibrator?.hasVibrator() == true) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(duration)
+            }
+        }
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {
@@ -42,11 +76,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestAccessibilityPermission() {
-        Toast.makeText(
-            this,
-            "Пожалуйста, включите сервис в настройках специальных возможностей",
-            Toast.LENGTH_LONG
-        ).show()
+        showToast("Включите сервис в настройках специальных возможностей")
         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
     }
 }
