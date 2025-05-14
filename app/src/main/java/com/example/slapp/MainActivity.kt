@@ -6,41 +6,46 @@ import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.provider.Settings
+import android.widget.CompoundButton
 import androidx.appcompat.app.AppCompatActivity
 import com.example.slapp.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private lateinit var vibrator: Vibrator
+    private var isLockEnabled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.switchLock.setOnCheckedChangeListener { _, isChecked ->
+        vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+
+        binding.switch1.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                vibrate(100)
-                checkOverlayPermission()
+                enableLock()
             } else {
-                vibrate(50)
-                stopService(Intent(this, ScreenLockService::class.java))
+                disableLock()
             }
         }
     }
 
-    private fun checkOverlayPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            startActivity(Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                android.net.Uri.parse("package:$packageName")
-            ))
-        } else {
-            startService(Intent(this, ScreenLockService::class.java))
-        }
+    private fun enableLock() {
+        vibrate(100)
+        isLockEnabled = true
+        startService(Intent(this, ScreenLockService::class.java).apply {
+            putExtra("lock_state", true)
+        })
+    }
+
+    private fun disableLock() {
+        vibrate(50)
+        isLockEnabled = false
+        stopService(Intent(this, ScreenLockService::class.java))
     }
 
     private fun vibrate(duration: Long) {
-        val vibrator = getSystemService(Vibrator::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
