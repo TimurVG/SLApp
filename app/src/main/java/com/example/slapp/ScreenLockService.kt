@@ -1,88 +1,52 @@
 package com.example.slapp
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
-import android.graphics.PixelFormat
-import android.os.Build
 import android.os.IBinder
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
-import android.provider.Settings
-import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.View
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 
 class ScreenLockService : Service() {
-    private lateinit var windowManager: WindowManager
-    private lateinit var overlayView: CustomLockView
-    private lateinit var vibrator: Vibrator
+    private lateinit var overlayView: View
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        overlayView = CustomLockView(this)
-        setupVibrator()
-        setupOverlay()
-        startForeground(1, createNotification())
+        startForegroundService()
+        showOverlay()
     }
 
-    private fun setupVibrator() {
-        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            getSystemService(VIBRATOR_SERVICE) as Vibrator
-        }
-    }
-
-    private fun setupOverlay() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val params = WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-                PixelFormat.TRANSLUCENT
-            ).apply {
-                gravity = Gravity.TOP
-            }
-
-            if (Settings.canDrawOverlays(this)) {
-                windowManager.addView(overlayView, params)
-            } else {
-                stopSelf()
-            }
-        }
-    }
-
-    private fun createNotification(): Notification {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "lock_channel",
-                "Screen Lock",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-        }
-
-        return NotificationCompat.Builder(this, "lock_channel")
+    private fun startForegroundService() {
+        val notification = NotificationCompat.Builder(this, "lock_channel")
             .setContentTitle("Screen Lock Active")
-            .setContentText("Protecting your screen")
-            .setSmallIcon(R.drawable.ic_notification)
+            .setContentText("Touch protection is enabled")
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .build()
+
+        startForeground(1, notification)
+    }
+
+    private fun showOverlay() {
+        overlayView = LayoutInflater.from(this).inflate(R.layout.lock_overlay, null)
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            android.graphics.PixelFormat.TRANSLUCENT
+        )
+
+        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        windowManager.addView(overlayView, params)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         try {
+            val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
             windowManager.removeView(overlayView)
         } catch (e: Exception) {
             e.printStackTrace()
