@@ -1,55 +1,38 @@
 package com.example.slapp
 
 import android.content.Intent
-import android.os.Build
+import android.net.Uri
 import android.os.Bundle
-import android.os.VibrationEffect
-import android.os.Vibrator
 import android.provider.Settings
-import android.widget.CompoundButton
+import android.widget.Switch
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.example.slapp.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityMainBinding
-    private lateinit var vibrator: Vibrator
-    private var isLockEnabled = false
+    private lateinit var lockSwitch: Switch
+    private lateinit var switchStatus: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_main)
 
-        vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+        lockSwitch = findViewById(R.id.lockSwitch)
+        switchStatus = findViewById(R.id.switchStatus)
 
-        binding.switch1.setOnCheckedChangeListener { _, isChecked ->
+        lockSwitch.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                enableLock()
+                switchStatus.text = getString(R.string.switch_on)
+                // Проверка и запрос разрешения доступности
+                checkAccessibilityPermission()
             } else {
-                disableLock()
+                switchStatus.text = getString(R.string.switch_off)
             }
         }
     }
 
-    private fun enableLock() {
-        vibrate(100)
-        isLockEnabled = true
-        startService(Intent(this, ScreenLockService::class.java).apply {
-            putExtra("lock_state", true)
-        })
-    }
-
-    private fun disableLock() {
-        vibrate(50)
-        isLockEnabled = false
-        stopService(Intent(this, ScreenLockService::class.java))
-    }
-
-    private fun vibrate(duration: Long) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            vibrator.vibrate(duration)
-        }
+    private fun checkAccessibilityPermission() {
+        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
     }
 }
