@@ -1,38 +1,33 @@
+// app/src/main/java/com/example/slapp/MainActivity.kt
 package com.example.slapp
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.widget.Switch
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.example.slapp.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var lockSwitch: Switch
-    private lateinit var switchStatus: TextView
+    private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        lockSwitch = findViewById(R.id.lockSwitch)
-        switchStatus = findViewById(R.id.switchStatus)
-
-        lockSwitch.setOnCheckedChangeListener { _, isChecked ->
+        binding.lockSwitch.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                switchStatus.text = getString(R.string.switch_on)
-                // Проверка и запрос разрешения доступности
-                checkAccessibilityPermission()
+                startService(Intent(this, ScreenLockerService::class.java))
+                vibrate(100)
             } else {
-                switchStatus.text = getString(R.string.switch_off)
+                stopService(Intent(this, ScreenLockerService::class.java))
             }
         }
     }
 
-    private fun checkAccessibilityPermission() {
-        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(intent)
+    private fun vibrate(durationMs: Long) {
+        (getSystemService(VIBRATOR_SERVICE) as? Vibrator)?.vibrate(
+            VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE)
+        )
     }
 }

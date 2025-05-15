@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">SLApp</string>
-    <string name="accessibility_service_description">Сервис блокировки экрана</string>
     <string name="switch_text">Блокировка экрана</string>
     <string name="switch_on">Включено</string>
     <string name="switch_off">Выключено</string>
+    <string name="accessibility_service_description">Screen lock service</string>
 </resources>
